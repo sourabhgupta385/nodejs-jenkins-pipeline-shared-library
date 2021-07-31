@@ -3,14 +3,14 @@ def call(String agentLabel) {
     pipeline {
         agent none
         stages {
-            stage('Unit Test') {
-                agent { label agentLabel }
-                steps {
-                    // git branch: 'main', url: ''
-                    sh "npm install"
-                    sh "npm run unit-test"
-                }
-            }
+            // stage('Unit Test') {
+            //     agent { label agentLabel }
+            //     steps {
+            //         // git branch: 'main', url: ''
+            //         sh "npm install"
+            //         sh "npm run unit-test"
+            //     }
+            // }
 
             stage('Code Quality Analysis') {
                 agent {
