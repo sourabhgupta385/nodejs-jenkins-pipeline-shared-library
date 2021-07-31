@@ -19,7 +19,7 @@ def call(String agentLabel) {
                         yaml '''
                         spec:
                           containers:
-                            - name: sonarqube-scanner
+                            - name: jnlp
                               image: sonarsource/sonar-scanner-cli
                           imagePullSecret: image-registry-cred
                         '''
