@@ -16,6 +16,7 @@ def call(String agentLabel) {
                 agent {
                     kubernetes {
                         yamlFile 'k8s-manifests/sonar-scanner-pod.yaml'
+                        defaultContainer 'jnlp'
                     }
                 }
                 steps {
