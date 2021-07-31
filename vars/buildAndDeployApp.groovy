@@ -2,21 +2,29 @@ def call(String agentLabel) {
     
     pipeline {
         agent { label agentLabel }
-
         stages {
-            stage('Checkout') {
+            stage('Unit Test') {
                 steps {
                     // git branch: 'main', url: ''
-                    sh "ls -ltr"
+                    sh "npm install"
+                    sh "npm unit-test"
                 }
             }
 
-            // stage('Unit Test') {
-            //     steps {
-            //         sh "npm install"
-            //         sh "npm test"
-            //     }
-            // }
+            stage('Code Quality Analysis') {
+                agent {
+                    kubernetes {
+                        label 'sonarqube-scanner'
+                        containerTemplate {
+                            name 'sonarqube-scanner'
+                            image 'sonarsource/sonar-scanner-cli'
+                        }
+                    }
+                }
+                steps {
+                    sh "sonar-scanner -Dsonar.qualitygate.wait=true"
+                }
+            }
 
             // stage('Deploy') {
             //     steps {
