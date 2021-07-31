@@ -21,6 +21,7 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('sonar-scanner') {
+                        git branch: 'main', url: 'https://github.com/sourabhgupta385/nodejs-ci-cd'
                         sh "sonar-scanner -Dsonar.qualitygate.wait=true"
                     }
                 }
