@@ -7,7 +7,7 @@ def call(String agentLabel) {
                 steps {
                     // git branch: 'main', url: ''
                     sh "npm install"
-                    sh "npm unit-test"
+                    sh "npm run unit-test"
                 }
             }
 
