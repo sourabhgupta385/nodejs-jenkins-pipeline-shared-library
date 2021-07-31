@@ -16,12 +16,10 @@ def call(String agentLabel) {
                 agent {
                     kubernetes {
                         yamlFile 'k8s-manifests/sonar-scanner-pod.yaml'
-                        defaultContainer 'jnlp'
                     }
                 }
                 steps {
                     container('sonar-scanner') {
-                        git branch: 'main', url: 'https://github.com/sourabhgupta385/nodejs-ci-cd'
                         sh "sonar-scanner -Dsonar.qualitygate.wait=true"
                     }
                 }
