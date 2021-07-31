@@ -19,6 +19,8 @@ def call(String agentLabel) {
                     }
                 }
                 steps {
+                    sh "ls -ltr"
+                    sh "printenv"
                     sh "sonar-scanner -Dsonar.qualitygate.wait=true"
                 }
             }
