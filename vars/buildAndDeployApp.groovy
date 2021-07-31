@@ -15,14 +15,7 @@ def call(String agentLabel) {
             stage('Code Quality Analysis') {
                 agent {
                     kubernetes {
-                        inheritFrom agentLabel
-                        yaml '''
-                        spec:
-                          containers:
-                            - name: jnlp
-                              image: sonarsource/sonar-scanner-cli
-                          imagePullSecret: image-registry-cred
-                        '''
+                        yamlFile 'k8s-manifests/sonar-scanner-pod.yaml'
                     }
                 }
                 steps {
