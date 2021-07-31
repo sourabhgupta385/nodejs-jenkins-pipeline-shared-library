@@ -1,7 +1,7 @@
 def call(String agentLabel) {
     
     pipeline {
-        agent { label: agentLabel }
+        agent { label agentLabel }
 
         stages {
             stage('Checkout') {
