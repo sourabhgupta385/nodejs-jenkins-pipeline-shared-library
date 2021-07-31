@@ -1,9 +1,9 @@
 def call(String agentLabel) {
     
     pipeline {
-        agent { label agentLabel }
         stages {
             stage('Unit Test') {
+                agent { label agentLabel }
                 steps {
                     // git branch: 'main', url: ''
                     sh "npm install"
