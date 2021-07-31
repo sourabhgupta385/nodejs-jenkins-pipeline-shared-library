@@ -3,14 +3,15 @@ def call(String agentLabel) {
     pipeline {
         agent none
         stages {
-            // stage('Unit Test') {
-            //     agent { label agentLabel }
-            //     steps {
-            //         // git branch: 'main', url: ''
-            //         sh "npm install"
-            //         sh "npm run unit-test"
-            //     }
-            // }
+            stage('Unit Test') {
+                agent { label agentLabel }
+                steps {
+                    // git branch: 'main', url: ''
+                    sh "npm install"
+                    sh "npm run unit-test"
+                    stash includes: 'coverage/*', name: 'coverage-report' 
+                }
+            }
 
             stage('Code Quality Analysis') {
                 agent {
@@ -20,6 +21,7 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('sonar-scanner') {
+                        unstash 'coverage-report'
                         sh "sonar-scanner -Dsonar.qualitygate.wait=true"
                     }
                 }
