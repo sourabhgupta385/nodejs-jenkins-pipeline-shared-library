@@ -20,8 +20,6 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('sonar-scanner') {
-                        sh "ls -ltr"
-                        sh "printenv"
                         sh "sonar-scanner -Dsonar.qualitygate.wait=true"
                     }
                 }
