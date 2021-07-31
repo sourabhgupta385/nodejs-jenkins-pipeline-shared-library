@@ -15,20 +15,14 @@ def call(String agentLabel) {
             stage('Code Quality Analysis') {
                 agent {
                     kubernetes {
-                        label 'sonarqube-scanner'
-                        yaml """
-                            kind: Pod
-                            metadata:
-                              name: sonarqube-scanner
-                            spec:
-                              containers:
-                                - name: sonarqube-scanner
-                                  image: sonarsource/sonar-scanner-cli
-                                  imagePullPolicy: Always
-                                  tty: true
-                              restartPolicy: Never
-                              imagePullSecret: image-registry-cred
-                        """
+                        inheritFrom agentLabel
+                        yaml '''
+                        spec:
+                          containers:
+                            - name: sonarqube-scanner
+                              image: sonarsource/sonar-scanner-cli
+                          imagePullSecret: image-registry-cred
+                        '''
                     }
                 }
                 steps {
