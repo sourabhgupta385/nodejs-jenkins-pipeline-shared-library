@@ -19,15 +19,15 @@ def call(String agentLabel) {
                         yaml """
                             kind: Pod
                             metadata:
-                            name: sonarqube-scanner
+                              name: sonarqube-scanner
                             spec:
-                            containers:
-                            - name: sonarqube-scanner
-                                image: sonarsource/sonar-scanner-cli
-                                imagePullPolicy: Always
-                                tty: true
-                            restartPolicy: Never
-                            imagePullSecret: image-registry-cred
+                              containers:
+                                - name: sonarqube-scanner
+                                  image: sonarsource/sonar-scanner-cli
+                                  imagePullPolicy: Always
+                                  tty: true
+                              restartPolicy: Never
+                              imagePullSecret: image-registry-cred
                         """
                     }
                 }
