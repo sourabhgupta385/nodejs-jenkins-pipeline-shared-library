@@ -1,6 +1,7 @@
 def call(String agentLabel) {
     
     pipeline {
+        agent none
         stages {
             stage('Unit Test') {
                 agent { label agentLabel }
