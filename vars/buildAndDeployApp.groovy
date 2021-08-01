@@ -48,7 +48,7 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('buildah') {
-                        sh "buildah version"
+                        sh "buildah bud -t sourabh385/nodejs-ci-cd:${BUILD_NUMBER} -f Dockerfile"
                     }
                 }
             }
