@@ -27,15 +27,28 @@ def call(String agentLabel) {
             //     }
             // }
 
+            // stage('Build & Publish Docker Image') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile 'k8s-manifests/slaves/kaniko-slave.yaml'
+            //         }
+            //     }
+            //     steps {
+            //         container('kaniko') {
+            //             sh "/kaniko/executor -f `pwd`/Dockerfile -c `pwd` --destination=sourabh385/nodejs-ci-cd:${BUILD_NUMBER}"
+            //         }
+            //     }
+            // }
+
             stage('Build & Publish Docker Image') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/kaniko-slave.yaml'
+                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
                     }
                 }
                 steps {
-                    container('kaniko') {
-                        sh "/kaniko/executor -f `pwd`/Dockerfile -c `pwd` --destination=sourabh385/nodejs-ci-cd:${BUILD_NUMBER}"
+                    container('buildah') {
+                        sh "buildah images"
                     }
                 }
             }
