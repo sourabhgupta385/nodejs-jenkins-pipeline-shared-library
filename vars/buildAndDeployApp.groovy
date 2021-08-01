@@ -35,7 +35,7 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('kaniko') {
-                        sh "/kaniko/executor -f `pwd`/Dockerfile -c `pwd` --destination=nodejs-ci-cd:${BUILD_NUMBER}"
+                        sh "/kaniko/executor -f `pwd`/Dockerfile -c `pwd` --destination=sourabh385/nodejs-ci-cd:${BUILD_NUMBER}"
                     }
                 }
             }
