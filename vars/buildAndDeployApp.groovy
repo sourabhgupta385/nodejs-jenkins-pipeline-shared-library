@@ -48,7 +48,7 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('buildah') {
-                        sh "buildah images"
+                        sh "buildah version"
                     }
                 }
             }
