@@ -48,8 +48,8 @@ def call(String agentLabel) {
                 }
                 steps {
                     container('buildah') {
-                        sh "buildah --storage-driver vfs --format docker bud -t docker.io/sourabh385/dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
-                        sh "buildah push --authfile '/tmp/config.json' docker.io/sourabh385/dvna-devsecops:${BUILD_NUMBER}"
+                        sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
+                        sh "buildah push --authfile '/tmp/config.json' dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
                     }
                 }
             }
