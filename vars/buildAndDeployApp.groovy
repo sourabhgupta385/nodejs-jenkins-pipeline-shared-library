@@ -30,6 +30,7 @@ def call(String agentLabel) {
             stage('Software Composition Analysis') {
                 agent { label agentLabel }
                 steps {
+                    sh "npm install"
                     sh "npm audit"
                 }
             }
