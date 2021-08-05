@@ -15,7 +15,7 @@ def call(String agentLabel) {
                     //container('nodejs') {
                         sh "npm install"
                         sh "npm run unit-test"
-                        sh "npm audit"
+                        //sh "npm audit"
                         stash includes: 'coverage/*', name: 'coverage-report' 
                     //}
                 }
@@ -31,7 +31,7 @@ def call(String agentLabel) {
                 steps {
                     container('owasp-dependency-checker') {
                         sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
-                        dependencyCheckPublisher pattern: "dependency-check-report.xml"
+                        dependencyCheckPublisher pattern: "dependency-check-junit.xml"
                     }
                 }
             }
