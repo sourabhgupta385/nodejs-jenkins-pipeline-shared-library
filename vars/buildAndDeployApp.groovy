@@ -26,7 +26,7 @@ def call(String agentLabel) {
                     container('owasp-dependency-checker') {
                         unstash 'node_modules'
                         sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
-                        dependencyCheckPublisher pattern: "dependency-check-junit.xml"
+                        dependencyCheckPublisher pattern: "dependency-check-report.xml"
                     }
                 }
             }
