@@ -37,7 +37,7 @@ def call(String agentLabel) {
                 steps {
                     container('owasp-dependency-checker') {
                         sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL --out '${WORKSPACE}/owasp-report'"
-                        dependencyCheckPublisher pattern: "${WORKSPACE}/owasp-report/dependency-check-report.xml"
+                        dependencyCheckPublisher pattern: "${WORKSPACE}/owasp-report/dependency-check-junit.xml"
                     }
                 }
             }
