@@ -28,11 +28,18 @@ def call(String agentLabel) {
             // }
 
             stage('Software Composition Analysis') {
-                agent { label agentLabel }
-                steps {
-                    sh "npm install"
-                    sh "npm audit"
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/owasp-dependency-check-slave.yaml'
+                    }
                 }
+                steps {
+                    container('sonar-scanner') {
+                        sh "pwd"
+                        sh "ls -ltr"
+                    }
+                }
+                // dependencyCheckPublisher pattern: 'target/dependency-check-report.xml'
             }
 
             // stage('Build & Publish Docker Image') {
