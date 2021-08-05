@@ -33,13 +33,16 @@ def call(String agentLabel) {
                         yamlFile 'k8s-manifests/slaves/owasp-dependency-check-slave.yaml'
                     }
                 }
+                
                 steps {
                     container('owasp-dependency-checker') {
-                        sh "pwd"
+                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
                         sh "ls -ltr"
+                        sh "cd target && ls -ltr"
                     }
                 }
-                // dependencyCheckPublisher pattern: 'target/dependency-check-report.xml'
+                
+                dependencyCheckPublisher pattern: 'target/dependency-check-report.xml'
             }
 
             // stage('Build & Publish Docker Image') {
