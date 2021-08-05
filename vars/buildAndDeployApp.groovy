@@ -5,18 +5,19 @@ def call(String agentLabel) {
         stages {
             stage('Unit Test') {
                 agent {
-                    kubernetes {
-                        yamlFile 'k8s-manifests/slaves/nodejs-slave.yaml'
-                    }
+                    // kubernetes {
+                    //     yamlFile 'k8s-manifests/slaves/nodejs-slave.yaml'
+                    // }
+                    label agentLabel
                 }
 
                 steps {
-                    container('nodejs') {
+                    //container('nodejs') {
                         sh "npm install"
                         sh "npm run unit-test"
                         sh "npm audit"
                         stash includes: 'coverage/*', name: 'coverage-report' 
-                    }
+                    //}
                 }
             }
 
