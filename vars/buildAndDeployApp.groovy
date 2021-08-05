@@ -34,7 +34,7 @@ def call(String agentLabel) {
                     }
                 }
                 steps {
-                    container('sonar-scanner') {
+                    container('owasp-dependency-checker') {
                         sh "pwd"
                         sh "ls -ltr"
                     }
