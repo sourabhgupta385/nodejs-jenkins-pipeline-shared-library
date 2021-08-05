@@ -13,20 +13,6 @@ def call(String agentLabel) {
             //     }
             // }
 
-            // stage('Code Quality Analysis') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/sonar-scanner-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('sonar-scanner') {
-            //             unstash 'coverage-report'
-            //             sh "sonar-scanner -Dsonar.qualitygate.wait=true"
-            //         }
-            //     }
-            // }
-
             stage('Software Composition Analysis') {
                 agent {
                     kubernetes {
@@ -36,8 +22,22 @@ def call(String agentLabel) {
                 
                 steps {
                     container('owasp-dependency-checker') {
-                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL --out '${WORKSPACE}/owasp-report'"
-                        dependencyCheckPublisher pattern: "${WORKSPACE}/owasp-report/dependency-check-junit.xml"
+                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
+                        dependencyCheckPublisher pattern: "dependency-check-report.xml"
+                    }
+                }
+            }
+
+            stage('Code Quality Analysis') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/sonar-scanner-slave.yaml'
+                    }
+                }
+                steps {
+                    container('sonar-scanner') {
+                        //unstash 'coverage-report'
+                        sh "sonar-scanner -Dsonar.qualitygate.wait=true"
                     }
                 }
             }
