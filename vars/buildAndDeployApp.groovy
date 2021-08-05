@@ -47,20 +47,20 @@ def call(String agentLabel) {
             //     }
             // }
 
-            stage('Build & Publish Docker Image') {
-                agent {
-                    kubernetes {
-                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
-                    }
-                }
-                steps {
-                    container('buildah') {
-                        sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
-                        sh "buildah images --storage-driver vfs"
-                        sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
-                    }
-                }
-            }
+            // stage('Build & Publish Docker Image') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
+            //         }
+            //     }
+            //     steps {
+            //         container('buildah') {
+            //             sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
+            //             sh "buildah images --storage-driver vfs"
+            //             sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
+            //         }
+            //     }
+            // }
 
             // stage('Deploy') {
             //     steps {
