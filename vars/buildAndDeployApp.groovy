@@ -4,20 +4,14 @@ def call(String agentLabel) {
         agent none
         stages {
             stage('Unit Test') {
-                agent {
-                    // kubernetes {
-                    //     yamlFile 'k8s-manifests/slaves/nodejs-slave.yaml'
-                    // }
-                    label agentLabel
-                }
+                agent { label agentLabel }
 
                 steps {
-                    //container('nodejs') {
-                        sh "npm install"
-                        sh "npm run unit-test"
-                        //sh "npm audit"
-                        stash includes: 'coverage/*', name: 'coverage-report' 
-                    //}
+                    sh "npm install"
+                    sh "npm run unit-test"
+                    //sh "npm audit"
+                    stash includes: 'coverage/*', name: 'coverage-report' 
+                    stash includes: 'node_modules/', name: 'node_modules' 
                 }
             }
 
@@ -30,6 +24,7 @@ def call(String agentLabel) {
                 
                 steps {
                     container('owasp-dependency-checker') {
+                        unstash 'node_modules'
                         sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
                         dependencyCheckPublisher pattern: "dependency-check-junit.xml"
                     }
