@@ -80,7 +80,7 @@ def call(String agentLabel) {
                         //unstash 'node_modules'
                         sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
                         sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar:dvna-devsecops:${BUILD_NUMBER}"
-                        stash includes: 'dvna_devsecops_${BUILD_NUMBER}.tar', name: 'docker-image' 
+                        stash includes: "dvna_devsecops_${BUILD_NUMBER}.tar", name: 'docker-image' 
                         //sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
                     }
                 }
@@ -93,7 +93,7 @@ def call(String agentLabel) {
                     }
                 }
                 steps {
-                    container('buildah') {
+                    container('trivy-scanner') {
                         unstash 'docker-image'
                         sh "trivy image —input dvna_devsecops_${BUILD_NUMBER}.tar"
                     }
