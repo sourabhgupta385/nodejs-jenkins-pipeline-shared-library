@@ -69,7 +69,7 @@ def call(String agentLabel) {
             //     }
             // }
 
-            stage('Build & Publish Docker Image') {
+            stage('Build Docker Image') {
                 agent {
                     kubernetes {
                         yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
@@ -80,8 +80,22 @@ def call(String agentLabel) {
                         //unstash 'node_modules'
                         sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
                         sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar:dvna-devsecops:${BUILD_NUMBER}"
-                        sh "ls -ltr"
+                        stash includes: 'dvna_devsecops_${BUILD_NUMBER}.tar', name: 'docker-image' 
                         //sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
+                    }
+                }
+            }
+
+            stage('Scan Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/trivy-slave.yaml'
+                    }
+                }
+                steps {
+                    container('buildah') {
+                        unstash 'docker-image'
+                        sh "trivy image —input dvna_devsecops_${BUILD_NUMBER}.tar"
                     }
                 }
             }
