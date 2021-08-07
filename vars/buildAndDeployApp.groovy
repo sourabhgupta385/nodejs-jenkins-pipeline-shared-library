@@ -79,7 +79,7 @@ def call(String agentLabel) {
                     container('buildah') {
                         //unstash 'node_modules'
                         sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
-                        sh "buildah push localhost/dvna-devsecops:${BUILD_NUMBER} dir:/tmp"
+                        sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} dir:/tmp"
                         sh "cd /tmp && ls -ltr"
                         //sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
                     }
