@@ -97,7 +97,7 @@ def call(String agentLabel) {
                         unstash 'docker-image'
                         sh "mkdir -p /tmp/trivy"
                         sh "chmod 754 /tmp/trivy"
-                        sh "trivy --cache-dir /tmp/trivy image --format template --template '@contrib/html.tpl' -o trivy-report.html --input dvna_devsecops_${BUILD_NUMBER}.tar"
+                        sh "trivy --cache-dir /tmp/trivy image --format template --template contrib/html.tpl -o trivy-report.html --input dvna_devsecops_${BUILD_NUMBER}.tar"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
