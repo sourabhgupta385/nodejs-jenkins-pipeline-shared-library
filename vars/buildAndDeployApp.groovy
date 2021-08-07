@@ -9,34 +9,33 @@ def call(String agentLabel) {
             //     steps {
             //         sh "npm install"
             //         sh "npm run unit-test"
-            //         //sh "npm audit"
             //         stash includes: 'coverage/*', name: 'coverage-report' 
             //         stash includes: 'node_modules/', name: 'node_modules' 
             //     }
             // }
 
-            stage('Static Application Security Testing') {
-                agent {
-                    kubernetes {
-                        yamlFile 'k8s-manifests/slaves/nodejsscan-slave.yaml'
-                    }
-                }
+            // stage('Static Application Security Testing') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile 'k8s-manifests/slaves/nodejsscan-slave.yaml'
+            //         }
+            //     }
                 
-                steps {
-                    container('nodejsscanner') {
-                        sh "njsscan src --html -o 'nodejs-scanner-report.html' || true"
-                        sh "ls -ltr"
-                        publishHTML target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: './',
-                            reportFiles: 'nodejs-scanner-report.html',
-                            reportName: 'SAST Report'
-                        ]
-                    }
-                }
-            }
+            //     steps {
+            //         container('nodejsscanner') {
+            //             sh "njsscan src --html -o 'nodejs-scanner-report.html' || true"
+            //             sh "ls -ltr"
+            //             publishHTML target: [
+            //                 allowMissing: false,
+            //                 alwaysLinkToLastBuild: true,
+            //                 keepAll: true,
+            //                 reportDir: './',
+            //                 reportFiles: 'nodejs-scanner-report.html',
+            //                 reportName: 'SAST Report'
+            //             ]
+            //         }
+            //     }
+            // }
 
             // stage('Software Composition Analysis') {
             //     agent {
@@ -70,35 +69,21 @@ def call(String agentLabel) {
             //     }
             // }
 
-            // stage('Build & Publish Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/kaniko-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('kaniko') {
-            //             sh "/kaniko/executor -f `pwd`/Dockerfile -c `pwd` --destination=sourabh385/nodejs-ci-cd:${BUILD_NUMBER}"
-            //         }
-            //     }
-            // }
-
-            // stage('Build & Publish Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('buildah') {
-            //             unstash 'node_modules'
-            //             sh "ls -ltr"
-            //             sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
-            //             sh "buildah images --storage-driver vfs"
-            //             sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
-            //         }
-            //     }
-            // }
+            stage('Build & Publish Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
+                    }
+                }
+                steps {
+                    container('buildah') {
+                        //unstash 'node_modules'
+                        sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
+                        sh "buildah push localhost/dvna-devsecops:${BUILD_NUMBER} dir:/tmp"
+                        //sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
+                    }
+                }
+            }
 
             // stage('Deploy') {
             //     steps {
