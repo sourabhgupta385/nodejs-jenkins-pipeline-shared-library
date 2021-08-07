@@ -95,7 +95,7 @@ def call(String agentLabel) {
                 steps {
                     container('trivy-scanner') {
                         unstash 'docker-image'
-                        sh "trivy image —input dvna_devsecops_${BUILD_NUMBER}.tar"
+                        sh "trivy image --input dvna_devsecops_${BUILD_NUMBER}.tar"
                     }
                 }
             }
