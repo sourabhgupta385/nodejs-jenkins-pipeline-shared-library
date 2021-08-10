@@ -23,7 +23,7 @@ def call(String agentLabel) {
                 
                 steps {
                     container('nodejsscanner') {
-                        sh "njsscan src --html -o 'nodejs-scanner-report.html' --json -o 'nodejs-scanner-report.json' || true"
+                        sh "njsscan src --html --json -o 'nodejs-scanner-report' || true"
                         sh "ls -ltr"
                         publishHTML target: [
                             allowMissing: false,
@@ -81,7 +81,6 @@ def call(String agentLabel) {
                         sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
                         sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar:dvna-devsecops:${BUILD_NUMBER}"
                         stash includes: "dvna_devsecops_${BUILD_NUMBER}.tar", name: 'docker-image' 
-                        //sh "buildah push --authfile '/tmp/config.json' --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
                     }
                 }
             }
@@ -97,17 +96,7 @@ def call(String agentLabel) {
                         unstash 'docker-image'
                         sh "mkdir -p /tmp/trivy"
                         sh "chmod 754 /tmp/trivy"
-                        sh script: 'TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'
-                        // publishHTML target: [
-                        //     allowMissing: false,
-                        //     alwaysLinkToLastBuild: true,
-                        //     keepAll: true,
-                        //     reportDir: './',
-                        //     reportFiles: 'trivy-report.html',
-                        //     reportName: 'Docker Imange Scan Report'
-                        // ] 
-                        sh "ls -ltr" 
-                        sh "cat trivy-report.json"  
+                        sh script: 'TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'  
                         stash includes: 'trivy-report.json', name: 'trivy-report'                 
                     }
                 }
@@ -126,7 +115,28 @@ def call(String agentLabel) {
                         sh "buildah push --authfile '/tmp/config.json' localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
                     }
                 }
-            }            
+            } 
+
+            stage('Publish Reports to ArcherySec') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/archerysec-slave.yaml'
+                    }
+                }
+                steps {
+                    container('archerysec-cli') {
+                        unstash 'nodejs-scanner-report'
+                        unstash 'owasp-reports'
+                        unstash 'trivy-report' 
+
+                        // sh "archerysec-cli -s ${ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=test --scanner=nodejsscanner --project_id=81632946-09b6-446c-aded-699a702563da"
+
+                        sh "archerysec-cli -s ${ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=dependency-check-report.xml --TARGET=test --scanner=dependencycheck --project_id=81632946-09b6-446c-aded-699a702563da"
+
+                        sh "archerysec-cli -s ${ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=test --scanner=trivy --project_id=81632946-09b6-446c-aded-699a702563da"
+                    }
+                }
+            }           
 
             // stage('Deploy') {
             //     steps {
