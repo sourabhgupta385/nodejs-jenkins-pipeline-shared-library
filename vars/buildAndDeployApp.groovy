@@ -97,7 +97,7 @@ def call(String agentLabel) {
                         unstash 'docker-image'
                         sh "mkdir -p /tmp/trivy"
                         sh "chmod 754 /tmp/trivy"
-                        sh script: 'trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'
+                        sh script: 'TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'
                         // publishHTML target: [
                         //     allowMissing: false,
                         //     alwaysLinkToLastBuild: true,
@@ -106,7 +106,8 @@ def call(String agentLabel) {
                         //     reportFiles: 'trivy-report.html',
                         //     reportName: 'Docker Imange Scan Report'
                         // ] 
-                        sh "ls -ltr"   
+                        sh "ls -ltr" 
+                        sh "cat trivy-report.json"  
                         stash includes: 'trivy-report.json', name: 'trivy-report'                 
                     }
                 }
