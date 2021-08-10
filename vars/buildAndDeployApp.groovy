@@ -23,16 +23,8 @@ def call(String agentLabel) {
                 
                 steps {
                     container('nodejsscanner') {
-                        sh "njsscan src --html --json -o 'nodejs-scanner-report' || true"
+                        sh "njsscan src --json -o 'nodejs-scanner-report.json' || true"
                         sh "ls -ltr"
-                        publishHTML target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: './',
-                            reportFiles: 'nodejs-scanner-report.html',
-                            reportName: 'SAST Report'
-                        ]
                         stash includes: 'nodejs-scanner-report.json', name: 'nodejs-scanner-report' 
                     }
                 }
