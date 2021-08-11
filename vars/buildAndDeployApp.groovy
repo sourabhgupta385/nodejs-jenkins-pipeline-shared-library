@@ -123,7 +123,7 @@ def call(String agentLabel) {
 
                         // sh "archerysec-cli -s ${ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=test --scanner=nodejsscanner --project_id=81632946-09b6-446c-aded-699a702563da"
                         sh "printenv"
-                        sh "echo ${ARCHERYSEC_HOST_URL}"
+                        sh "echo ${env.ARCHERYSEC_HOST_URL}"
                         sh "archerysec-cli -s ${ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=test --scanner=dependencycheck --project_id=81632946-09b6-446c-aded-699a702563da"
 
                         sh "archerysec-cli -s ${ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=test --scanner=trivy --project_id=81632946-09b6-446c-aded-699a702563da"
