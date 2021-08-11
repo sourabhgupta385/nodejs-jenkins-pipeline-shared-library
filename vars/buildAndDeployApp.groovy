@@ -7,10 +7,8 @@ def call() {
                 agent any
 
                 steps {
-                    sh "ls -ltr"
                     script {
                         properties = readYaml file: "properties.yaml"
-                        echo "Later one ${properties.ARCHERYSEC_HOST_URL}"
                     }
                 }
             }
@@ -42,22 +40,22 @@ def call() {
             //     }
             // }
 
-            // stage('Software Composition Analysis') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/owasp-dependency-check-slave.yaml'
-            //         }
-            //     }
+            stage('Software Composition Analysis') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/owasp-dependency-check-slave.yaml'
+                    }
+                }
                 
-            //     steps {
-            //         container('owasp-dependency-checker') {
-            //             unstash 'node_modules'
-            //             sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
-            //             dependencyCheckPublisher pattern: "dependency-check-report.xml"
-            //             stash includes: "dependency-check-report.xml,dependency-check-report.json,dependency-check-report.html", name: 'owasp-reports' 
-            //         }
-            //     }
-            // }
+                steps {
+                    container('owasp-dependency-checker') {
+                        unstash 'node_modules'
+                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
+                        dependencyCheckPublisher pattern: "dependency-check-report.xml"
+                        stash includes: "dependency-check-report.xml,dependency-check-report.json,dependency-check-report.html", name: 'owasp-reports' 
+                    }
+                }
+            }
 
             // stage('Code Quality Analysis') {
             //     agent {
@@ -131,18 +129,14 @@ def call() {
                     container('archerysec-cli') {
                         withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
                             // unstash 'nodejs-scanner-report'
-                            // unstash 'owasp-reports'
+                            unstash 'owasp-reports'
                             // unstash 'trivy-report' 
 
                             // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=test --scanner=nodejsscanner --project_id=81632946-09b6-446c-aded-699a702563da"
                         
-                            sh "printenv"
-                            sh "echo ${properties.ARCHERYSEC_HOST_URL}"
-                            sh "echo ${ARCHERYSEC_USERNAME}"
-                            sh "echo ${ARCHERYSEC_PASSWORD}"
                             sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=test --scanner=dependencycheck --project_id=81632946-09b6-446c-aded-699a702563da"
 
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=test --scanner=trivy --project_id=81632946-09b6-446c-aded-699a702563da"
+                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=test --scanner=trivy --project_id=81632946-09b6-446c-aded-699a702563da"
                         }    
                     }
                 }
