@@ -1,10 +1,10 @@
-def call(String agentLabel) {
+def call() {
     
     pipeline {
         agent none
         stages {
             // stage('Unit Test') {
-            //     agent { label agentLabel }
+            //     agent { label 'nodejs' }
 
             //     steps {
             //         sh "npm install"
