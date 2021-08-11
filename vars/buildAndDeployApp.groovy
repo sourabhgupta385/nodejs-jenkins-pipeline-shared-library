@@ -7,6 +7,7 @@ def call() {
                 agent any
 
                 steps {
+                    sh "ls -ltr"
                     script {
                         properties = readYaml file: "properties.yaml"
                         echo "Later one ${properties.ARCHERYSEC_HOST_URL}"
