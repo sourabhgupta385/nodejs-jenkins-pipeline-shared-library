@@ -57,67 +57,67 @@ def call() {
                 }
             }
 
-            // stage('Code Quality Analysis') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/sonar-scanner-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('sonar-scanner') {
-            //             unstash 'coverage-report'
-            //             unstash 'owasp-reports'
-            //             sh "sonar-scanner -Dsonar.qualitygate.wait=true"
-            //         }
-            //     }
-            // }
+            stage('Code Quality Analysis') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/sonar-scanner-slave.yaml'
+                    }
+                }
+                steps {
+                    container('sonar-scanner') {
+                        unstash 'coverage-report'
+                        unstash 'owasp-reports'
+                        sh "sonar-scanner -Dsonar.qualitygate.wait=true"
+                    }
+                }
+            }
 
-            // stage('Build Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('buildah') {
-            //             sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
-            //             sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar:dvna-devsecops:${BUILD_NUMBER}"
-            //             stash includes: "dvna_devsecops_${BUILD_NUMBER}.tar", name: 'docker-image' 
-            //         }
-            //     }
-            // }
+            stage('Build Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
+                    }
+                }
+                steps {
+                    container('buildah') {
+                        sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
+                        sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar:dvna-devsecops:${BUILD_NUMBER}"
+                        stash includes: "dvna_devsecops_${BUILD_NUMBER}.tar", name: 'docker-image' 
+                    }
+                }
+            }
 
-            // stage('Scan Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/trivy-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('trivy-scanner') {
-            //             unstash 'docker-image'
-            //             sh "mkdir -p /tmp/trivy"
-            //             sh "chmod 754 /tmp/trivy"
-            //             sh script: 'TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'  
-            //             stash includes: 'trivy-report.json', name: 'trivy-report'                 
-            //         }
-            //     }
-            // }
+            stage('Scan Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/trivy-slave.yaml'
+                    }
+                }
+                steps {
+                    container('trivy-scanner') {
+                        unstash 'docker-image'
+                        sh "mkdir -p /tmp/trivy"
+                        sh "chmod 754 /tmp/trivy"
+                        sh script: 'TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'  
+                        stash includes: 'trivy-report.json', name: 'trivy-report'                 
+                    }
+                }
+            }
 
-            // stage('Push Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
-            //         }
-            //     }
-            //     steps {
-            //         container('buildah') {
-            //             unstash 'docker-image'
-            //             sh "buildah pull docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar"
-            //             sh "buildah push --authfile '/tmp/config.json' localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
-            //         }
-            //     }
-            // } 
+            stage('Push Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
+                    }
+                }
+                steps {
+                    container('buildah') {
+                        unstash 'docker-image'
+                        sh "buildah pull docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar"
+                        sh "buildah push --authfile '/tmp/config.json' localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
+                    }
+                }
+            } 
 
             stage('Publish Reports to ArcherySec') {
                 agent {
@@ -131,12 +131,12 @@ def call() {
                             unstash 'nodejs-scanner-report'
                             unstash 'owasp-reports'
                             unstash 'trivy-report' 
-
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=test --scanner=nodejsscan --project_id=655016af-2e40-47da-b4e2-da91db041fda"
                         
                             sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=655016af-2e40-47da-b4e2-da91db041fda"
 
                             sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=655016af-2e40-47da-b4e2-da91db041fda"
+
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=655016af-2e40-47da-b4e2-da91db041fda"
                         }    
                     }
                 }
