@@ -13,16 +13,16 @@ def call() {
                 }
             }
 
-            // stage('Unit Test') {
-            //     agent { label 'nodejs' }
+            stage('Unit Test') {
+                agent { label 'nodejs' }
 
-            //     steps {
-            //         sh "npm install"
-            //         sh "npm run unit-test"
-            //         stash includes: 'coverage/*', name: 'coverage-report' 
-            //         stash includes: 'node_modules/', name: 'node_modules' 
-            //     }
-            // }
+                steps {
+                    sh "npm install"
+                    sh "npm run unit-test"
+                    stash includes: 'coverage/*', name: 'coverage-report' 
+                    stash includes: 'node_modules/', name: 'node_modules' 
+                }
+            }
 
             // stage('Static Application Security Testing') {
             //     agent {
