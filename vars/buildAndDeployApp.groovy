@@ -24,21 +24,21 @@ def call() {
                 }
             }
 
-            // stage('Static Application Security Testing') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile 'k8s-manifests/slaves/nodejsscan-slave.yaml'
-            //         }
-            //     }
+            stage('Static Application Security Testing') {
+                agent {
+                    kubernetes {
+                        yamlFile 'k8s-manifests/slaves/nodejsscan-slave.yaml'
+                    }
+                }
                 
-            //     steps {
-            //         container('nodejsscanner') {
-            //             sh "njsscan src --json -o 'nodejs-scanner-report.json' || true"
-            //             sh "ls -ltr"
-            //             stash includes: 'nodejs-scanner-report.json', name: 'nodejs-scanner-report' 
-            //         }
-            //     }
-            // }
+                steps {
+                    container('nodejsscanner') {
+                        sh "njsscan src --json -o 'nodejs-scanner-report.json' || true"
+                        sh "ls -ltr"
+                        stash includes: 'nodejs-scanner-report.json', name: 'nodejs-scanner-report' 
+                    }
+                }
+            }
 
             stage('Software Composition Analysis') {
                 agent {
@@ -128,15 +128,15 @@ def call() {
                 steps {
                     container('archerysec-cli') {
                         withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
-                            // unstash 'nodejs-scanner-report'
+                            unstash 'nodejs-scanner-report'
                             unstash 'owasp-reports'
-                            // unstash 'trivy-report' 
+                            unstash 'trivy-report' 
 
-                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=test --scanner=nodejsscanner --project_id=81632946-09b6-446c-aded-699a702563da"
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=test --scanner=nodejsscan --project_id=655016af-2e40-47da-b4e2-da91db041fda"
                         
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=test --scanner=dependencycheck --project_id=81632946-09b6-446c-aded-699a702563da"
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=655016af-2e40-47da-b4e2-da91db041fda"
 
-                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=test --scanner=trivy --project_id=81632946-09b6-446c-aded-699a702563da"
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=655016af-2e40-47da-b4e2-da91db041fda"
                         }    
                     }
                 }
