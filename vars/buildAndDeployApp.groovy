@@ -8,12 +8,12 @@ def call() {
 
                 steps {
                     script {
-                        properties = readYaml file: "properties.yml"
+                        properties = readYaml file: "properties.yaml"
                         echo "Later one ${properties.ARCHERYSEC_HOST_URL}"
                     }
                 }
             }
-            
+
             // stage('Unit Test') {
             //     agent { label 'nodejs' }
 
