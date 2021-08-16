@@ -14,28 +14,40 @@ def call() {
             }
 
             stage('Unit Test') {
-                agent { label 'nodejs' }
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.NODEJS_SLAVE_YAML}"
+                    }
+                }
 
                 steps {
-                    sh "npm install"
-                    sh "npm run unit-test"
-                    stash includes: 'coverage/*', name: 'coverage-report' 
-                    stash includes: 'node_modules/', name: 'node_modules' 
-                }
+                    container('nodejs') {
+                        sh "npm install"
+                        sh "npm run unit-test"
+                        stash includes: 'coverage/*', name: 'coverage-report' 
+                        stash includes: 'node_modules/', name: 'node_modules' 
+                    }
+                }    
             }
 
             stage('Static Application Security Testing') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/nodejsscan-slave.yaml'
+                        yamlFile "${properties.NODEJSSCAN_SLAVE_YAML}"
                     }
                 }
                 
                 steps {
                     container('nodejsscanner') {
-                        sh "njsscan src --json -o 'nodejs-scanner-report.json' || true"
-                        sh "ls -ltr"
-                        stash includes: 'nodejs-scanner-report.json', name: 'nodejs-scanner-report' 
+                        sh "njsscan src --html -o 'nodejs-scanner-report.html' || true"
+                        publishHTML target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: './',
+                            reportFiles: 'nodejs-scanner-report.html',
+                            reportName: 'SAST Report'
+                        ]
                     }
                 }
             }
@@ -43,14 +55,14 @@ def call() {
             stage('Software Composition Analysis') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/owasp-dependency-check-slave.yaml'
+                        yamlFile "${properties.OWASP_DEPENDENCY_CHECK_SLAVE_YAML}"
                     }
                 }
                 
                 steps {
                     container('owasp-dependency-checker') {
                         unstash 'node_modules'
-                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ./package.json --format ALL"
+                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ${properties.PACKAGE_JSON_PATH} --format ALL"
                         dependencyCheckPublisher pattern: "dependency-check-report.xml"
                         stash includes: "dependency-check-report.xml,dependency-check-report.json,dependency-check-report.html", name: 'owasp-reports' 
                     }
@@ -60,14 +72,16 @@ def call() {
             stage('Code Quality Analysis') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/sonar-scanner-slave.yaml'
+                        yamlFile "${properties.SONAR_SCANNER_SLAVE_YAML}"
                     }
                 }
                 steps {
                     container('sonar-scanner') {
-                        unstash 'coverage-report'
-                        unstash 'owasp-reports'
-                        sh "sonar-scanner -Dsonar.qualitygate.wait=true"
+                        withCredentials([usernamePassword(credentialsId: 'sonarqube-creds', usernameVariable: 'SONAR_USERNAME', passwordVariable: 'SONAR_PASSWORD')]) {
+                            unstash 'coverage-report'
+                            unstash 'owasp-reports'
+                            sh "sonar-scanner -Dsonar.qualitygate.wait=true -Dsonar.host.url=${properties.SONAR_HOST_URL} -Dsonar.login=${SONAR_PASSWORD}"
+                        }
                     }
                 }
             }
@@ -75,14 +89,14 @@ def call() {
             stage('Build Docker Image') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
+                        yamlFile "${properties.BUILDAH_SLAVE_YAML}"
                     }
                 }
                 steps {
                     container('buildah') {
-                        sh "buildah --storage-driver vfs bud -t dvna-devsecops:${BUILD_NUMBER} -f Dockerfile"
-                        sh "buildah push --storage-driver vfs localhost/dvna-devsecops:${BUILD_NUMBER} docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar:dvna-devsecops:${BUILD_NUMBER}"
-                        stash includes: "dvna_devsecops_${BUILD_NUMBER}.tar", name: 'docker-image' 
+                        sh "buildah --storage-driver vfs bud -t ${properties.APP_NAME}:${BUILD_NUMBER} -f ${DOCKERFILE_PATH}"
+                        sh "buildah push --storage-driver vfs localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar:${properties.APP_NAME}:${BUILD_NUMBER}"
+                        stash includes: "${properties.APP_NAME}_${BUILD_NUMBER}.tar", name: 'docker-image' 
                     }
                 }
             }
@@ -90,7 +104,7 @@ def call() {
             stage('Scan Docker Image') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/trivy-slave.yaml'
+                        yamlFile "${properties.TRIVY_SLAVE_YAML}"
                     }
                 }
                 steps {
@@ -98,8 +112,8 @@ def call() {
                         unstash 'docker-image'
                         sh "mkdir -p /tmp/trivy"
                         sh "chmod 754 /tmp/trivy"
-                        // sh script: 'TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar'  
-                        sh script: 'trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input dvna_devsecops_${BUILD_NUMBER}.tar' 
+                        // sh script: "TRIVY_NEW_JSON_SCHEMA=true trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input ${properties.APP_NAME}_${BUILD_NUMBER}.tar"
+                        sh script: "trivy --cache-dir /tmp/trivy image --format json -o trivy-report.json --input ${properties.APP_NAME}_${BUILD_NUMBER}.tar"
                         stash includes: 'trivy-report.json', name: 'trivy-report'                 
                     }
                 }
@@ -108,14 +122,17 @@ def call() {
             stage('Push Docker Image') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/buildah-slave.yaml'
+                        yamlFile "${properties.BUILDAH_SLAVE_YAML}"
                     }
                 }
                 steps {
                     container('buildah') {
-                        unstash 'docker-image'
-                        sh "buildah pull docker-archive:dvna_devsecops_${BUILD_NUMBER}.tar"
-                        sh "buildah push --authfile '/tmp/config.json' localhost/dvna-devsecops:${BUILD_NUMBER} docker://sourabh385/dvna-devsecops:${BUILD_NUMBER}"
+                        withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_REGISTRY_USERNAME', passwordVariable: 'DOCKER_REGISTRY_PASSWORD')]) {
+                            unstash 'docker-image'
+                            sh "buildah login --log-level=debug -u ${DOCKER_REGISTRY_USERNAME} -p ${DOCKER_REGISTRY_PASSWORD} ${properties.DOCKER_REGISTRY_URL}"
+                            sh "buildah pull docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar"
+                            sh "buildah push localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker://sourabh385/${properties.APP_NAME}:${BUILD_NUMBER}"
+                        }    
                     }
                 }
             } 
@@ -123,21 +140,20 @@ def call() {
             stage('Publish Reports to ArcherySec') {
                 agent {
                     kubernetes {
-                        yamlFile 'k8s-manifests/slaves/archerysec-slave.yaml'
+                        yamlFile "${properties.ARCHERYSEC_SLAVE_YAML}"
                     }
                 }
                 steps {
                     container('archerysec-cli') {
                         withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
-                            unstash 'nodejs-scanner-report'
                             unstash 'owasp-reports'
                             unstash 'trivy-report' 
                         
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=655016af-2e40-47da-b4e2-da91db041fda"
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
 
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=655016af-2e40-47da-b4e2-da91db041fda"
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
 
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=655016af-2e40-47da-b4e2-da91db041fda"
+                            //sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
                         }    
                     }
                 }
