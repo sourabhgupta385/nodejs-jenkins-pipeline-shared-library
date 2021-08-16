@@ -159,12 +159,12 @@ def call() {
             //     }
             // }           
 
-            stage('Deploy App in DEV') {
+            stage('Deploy App in STAGING') {
                 agent any
 
                 steps {
                     withKubeConfig([credentialsId: 'k8s-cluster-creds', serverUrl: "${properties.KUBERNETES_CLUSTER_URL}"]) {
-                        sh "kubectl -n ${properties.DEV_NAMESPACE} get pods"
+                        sh "kubectl -n ${properties.STAGING_NAMESPACE} apply -k ${properties.KUSTOMIZATION_DIRECTORY}"
                     }
                 }
             }
