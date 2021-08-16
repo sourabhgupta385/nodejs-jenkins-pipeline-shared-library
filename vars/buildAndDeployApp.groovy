@@ -94,7 +94,7 @@ def call() {
                 }
                 steps {
                     container('buildah') {
-                        sh "buildah --storage-driver vfs bud -t ${properties.APP_NAME}:${BUILD_NUMBER} -f ${DOCKERFILE_PATH}"
+                        sh "buildah --storage-driver vfs bud -t ${properties.APP_NAME}:${BUILD_NUMBER} -f ${properties.DOCKERFILE_PATH}"
                         sh "buildah push --storage-driver vfs localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar:${properties.APP_NAME}:${BUILD_NUMBER}"
                         stash includes: "${properties.APP_NAME}_${BUILD_NUMBER}.tar", name: 'docker-image' 
                     }
