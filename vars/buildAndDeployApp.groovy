@@ -169,27 +169,48 @@ def call() {
             //     }
             // }
 
-            stage('Load Testing') {
+            stage('Functional Testing') {
                 agent {
                     kubernetes {
-                        yamlFile "${properties.ARTILLERY_SLAVE_YAML}"
+                        yamlFile "${properties.NEWMAN_SLAVE_YAML}"
                     }
                 }
                 steps {
-                    container('artillery') {
-                        sh "artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
-                        sh "artillery report -o artillery-report.html artillery-report.json"
+                    container('newman') {
+                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --reporters html --reporter-html-export 'newman-report.html'"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
                             keepAll: true,
                             reportDir: './',
-                            reportFiles: 'artillery-report.html',
-                            reportName: 'Load Testing Report'
+                            reportFiles: 'newman-report.html',
+                            reportName: 'Functional Testing Report'
                         ]
                     }
                 }
             }
+
+            // stage('Load Testing') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile "${properties.ARTILLERY_SLAVE_YAML}"
+            //         }
+            //     }
+            //     steps {
+            //         container('artillery') {
+            //             sh "artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+            //             sh "artillery report -o artillery-report.html artillery-report.json"
+            //             publishHTML target: [
+            //                 allowMissing: false,
+            //                 alwaysLinkToLastBuild: true,
+            //                 keepAll: true,
+            //                 reportDir: './',
+            //                 reportFiles: 'artillery-report.html',
+            //                 reportName: 'Load Testing Report'
+            //             ]
+            //         }
+            //     }
+            // }
 
             // stage('Integration Test') {
             //     steps {
