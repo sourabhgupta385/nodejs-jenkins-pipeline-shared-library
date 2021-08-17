@@ -177,7 +177,7 @@ def call() {
                 }
                 steps {
                     container('newman') {
-                        sh "sed -i 's/APP_STAGING_TARGET_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
+                        sh "sed -i 's/APP_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
                         sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --reporters junit --reporter-junit-export='newman-report.xml'"
                         junit 'newman-report.xml'
                     }
