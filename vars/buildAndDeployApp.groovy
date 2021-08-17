@@ -177,33 +177,34 @@ def call() {
                 }
                 steps {
                     container('newman') {
-                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --global-var \"api_url=${properties.APP_STAGING_TARGET_URL}\" --verbose --reporters junit --reporter-junit-export='newman-report.xml'"
+                        sh "sed -i 's/APP_STAGING_TARGET_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
+                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --reporters junit --reporter-junit-export='newman-report.xml'"
                         junit 'newman-report.xml'
                     }
                 }
             }
 
-            // stage('Load Testing') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile "${properties.ARTILLERY_SLAVE_YAML}"
-            //         }
-            //     }
-            //     steps {
-            //         container('artillery') {
-            //             sh "artillery run -e staging -t ${properties.APP_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
-            //             sh "artillery report -o artillery-report.html artillery-report.json"
-            //             publishHTML target: [
-            //                 allowMissing: false,
-            //                 alwaysLinkToLastBuild: true,
-            //                 keepAll: true,
-            //                 reportDir: './',
-            //                 reportFiles: 'artillery-report.html',
-            //                 reportName: 'Load Testing Report'
-            //             ]
-            //         }
-            //     }
-            // }
+            stage('Load Testing') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.ARTILLERY_SLAVE_YAML}"
+                    }
+                }
+                steps {
+                    container('artillery') {
+                        sh "artillery run -e staging -t http://${properties.APP_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+                        sh "artillery report -o artillery-report.html artillery-report.json"
+                        publishHTML target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: './',
+                            reportFiles: 'artillery-report.html',
+                            reportName: 'Load Testing Report'
+                        ]
+                    }
+                }
+            }
 
             // stage('Integration Test') {
             //     steps {
