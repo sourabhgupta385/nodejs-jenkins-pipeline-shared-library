@@ -180,6 +180,7 @@ def call() {
                         sh "/usr/local/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
                         sh "cat artillery-report.json"
                         sh "artillery report -o artillery-report.html artillery-report.json"
+                        sh "cat artillery-report.html"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
