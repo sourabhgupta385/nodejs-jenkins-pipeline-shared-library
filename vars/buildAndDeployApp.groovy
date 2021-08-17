@@ -177,6 +177,7 @@ def call() {
                 }
                 steps {
                     container('newman') {
+                        sh "npm install newman-reporter-html"
                         sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --reporters html --reporter-html-export 'newman-report.html'"
                         publishHTML target: [
                             allowMissing: false,
