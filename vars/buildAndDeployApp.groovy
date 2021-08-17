@@ -177,16 +177,16 @@ def call() {
                 }
                 steps {
                     container('artillery') {
-                        sh "/usr/local/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+                        sh "/usr/local/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
                         sh "cat artillery-report.json"
-                        sh "/usr/local/bin/artillery report -o artillery-report.html artillery-report.json"
+                        sh "/usr/local/bin/artillery report -o report.html report.json"
                         sh "cat artillery-report.html"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
                             keepAll: true,
                             reportDir: './',
-                            reportFiles: 'artillery-report.html',
+                            reportFiles: 'report.html',
                             reportName: 'Load Testing Report'
                         ]
                     }
