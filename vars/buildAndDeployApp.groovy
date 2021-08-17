@@ -177,8 +177,8 @@ def call() {
                 }
                 steps {
                     container('newman') {
+                        sh "sed -i 's/APP_STAGING_TARGET_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
                         sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --reporters junit --reporter-junit-export='newman-report.xml'"
-                        sh "cat newman-report.xml"
                         junit 'newman-report.xml'
                     }
                 }
@@ -192,7 +192,7 @@ def call() {
             //     }
             //     steps {
             //         container('artillery') {
-            //             sh "artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+            //             sh "artillery run -e staging -t ${properties.APP_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
             //             sh "artillery report -o artillery-report.html artillery-report.json"
             //             publishHTML target: [
             //                 allowMissing: false,
