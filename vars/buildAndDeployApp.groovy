@@ -177,7 +177,7 @@ def call() {
                 }
                 steps {
                     container('newman') {
-                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --global-var 'api_url=${properties.APP_STAGING_TARGET_URL}' --reporters junit --reporter-junit-export='newman-report.xml'"
+                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --global-var \"api_url=${properties.APP_STAGING_TARGET_URL}\" --verbose --reporters junit --reporter-junit-export='newman-report.xml'"
                         junit 'newman-report.xml'
                     }
                 }
