@@ -40,14 +40,14 @@ def call() {
             //     steps {
             //         container('nodejsscanner') {
             //             sh "njsscan src --html -o 'nodejs-scanner-report.html' || true"
-            //             publishHTML target: [
-            //                 allowMissing: false,
-            //                 alwaysLinkToLastBuild: true,
-            //                 keepAll: true,
-            //                 reportDir: './',
-            //                 reportFiles: 'nodejs-scanner-report.html',
-            //                 reportName: 'SAST Report'
-            //             ]
+                        // publishHTML target: [
+                        //     allowMissing: false,
+                        //     alwaysLinkToLastBuild: true,
+                        //     keepAll: true,
+                        //     reportDir: './',
+                        //     reportFiles: 'nodejs-scanner-report.html',
+                        //     reportName: 'SAST Report'
+                        // ]
             //         }
             //     }
             // }
@@ -177,8 +177,16 @@ def call() {
                 }
                 steps {
                     container('artillery') {
-
-                        sh "/usr/local/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+                        sh "/usr/local/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+                        sh "artillery report -o artillery-report.html artillery-report.json"
+                        publishHTML target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: './',
+                            reportFiles: 'artillery-report.html',
+                            reportName: 'Load Testing Report'
+                        ]
                     }
                 }
             }
