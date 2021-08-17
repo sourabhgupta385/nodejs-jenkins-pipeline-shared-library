@@ -178,14 +178,8 @@ def call() {
                 steps {
                     container('newman') {
                         sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --reporters junit --reporter-junit-export='newman-report.xml'"
-                        publishHTML target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: './',
-                            reportFiles: 'newman-report.html',
-                            reportName: 'Functional Testing Report'
-                        ]
+                        sh "cat newman-report.xml"
+                        junit 'newman-report.xml'
                     }
                 }
             }
