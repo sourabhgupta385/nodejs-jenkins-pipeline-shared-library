@@ -159,12 +159,26 @@ def call() {
             //     }
             // }           
 
-            stage('Deploy App in STAGING') {
-                agent any
+            // stage('Deploy App in STAGING') {
+            //     agent any
 
+            //     steps {
+            //         withKubeConfig([credentialsId: 'k8s-cluster-creds', serverUrl: "${properties.KUBERNETES_CLUSTER_URL}"]) {
+            //             sh "kubectl -n ${properties.STAGING_NAMESPACE} apply -k ${properties.KUSTOMIZATION_DIRECTORY}"
+            //         }
+            //     }
+            // }
+
+            stage('Load Testing') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.ARTILLERY_SLAVE_YAML}"
+                    }
+                }
                 steps {
-                    withKubeConfig([credentialsId: 'k8s-cluster-creds', serverUrl: "${properties.KUBERNETES_CLUSTER_URL}"]) {
-                        sh "kubectl -n ${properties.STAGING_NAMESPACE} apply -k ${properties.KUSTOMIZATION_DIRECTORY}"
+                    container('artillery') {
+
+                        sh "artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} ${properties.ARTILLERY_CONFIG_FILE_PATH}"
                     }
                 }
             }
