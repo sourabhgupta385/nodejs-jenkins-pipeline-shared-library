@@ -178,7 +178,7 @@ def call() {
                 steps {
                     container('artillery') {
 
-                        sh "/home/node/artillery/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+                        sh "/usr/local/bin/artillery run -e staging -t ${properties.ARTILLERY_STAGING_TARGET_URL} ${properties.ARTILLERY_CONFIG_FILE_PATH}"
                     }
                 }
             }
