@@ -192,12 +192,13 @@ def call() {
                 }
                 steps {
                     container('zap') {
-                        sh "zap-cli quick-scan --help"
-                        sh "zap-cli start --start-options '-config api.disablekey=true'"
-                        sh "zap-cli open-url http://${properties.APP_STAGING_TARGET_URL}"
-                        sh "zap-cli spider http://${properties.APP_STAGING_TARGET_URL}"
-                        sh "zap-cli report --output-format html --output zap-report.html"
-                        sh "zap-cli quick-scan --spider http://${properties.APP_STAGING_TARGET_URL}"
+                        // sh "zap-cli quick-scan --help"
+                        // sh "zap-cli start --start-options '-config api.disablekey=true'"
+                        // sh "zap-cli open-url http://${properties.APP_STAGING_TARGET_URL}"
+                        // sh "zap-cli spider http://${properties.APP_STAGING_TARGET_URL}"
+                        // sh "zap-cli report --output-format html --output zap-report.html"
+                        // sh "zap-cli quick-scan --spider http://${properties.APP_STAGING_TARGET_URL}"
+                        sh "/zap/zap-baseline.py -r zap-report.html -t http://${properties.APP_STAGING_TARGET_URL}"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
