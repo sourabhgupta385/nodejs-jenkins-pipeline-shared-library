@@ -198,7 +198,7 @@ def call() {
                         // sh "zap-cli spider http://${properties.APP_STAGING_TARGET_URL}"
                         // sh "zap-cli report --output-format html --output zap-report.html"
                         // sh "zap-cli quick-scan --spider http://${properties.APP_STAGING_TARGET_URL}"
-                        sh "/zap/zap-baseline.py -r zap-report.html -t http://${properties.APP_STAGING_TARGET_URL}"
+                        sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
