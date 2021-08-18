@@ -135,29 +135,7 @@ def call() {
             //             }    
             //         }
             //     }
-            // } 
-
-            // stage('Publish Reports to ArcherySec') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile "${properties.ARCHERYSEC_SLAVE_YAML}"
-            //         }
-            //     }
-            //     steps {
-            //         container('archerysec-cli') {
-            //             withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
-            //                 unstash 'owasp-reports'
-            //                 unstash 'trivy-report' 
-                        
-            //                 sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
-
-            //                 sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
-
-            //                 //sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
-            //             }    
-            //         }
-            //     }
-            // }           
+            // }            
 
             // stage('Deploy App in STAGING') {
             //     agent any
@@ -199,7 +177,7 @@ def call() {
                         // 	3:	Any other failure
                         sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html -x zap-report.xml || true"
                         sh "cp /zap/wrk/zap-report.html ./"
-                        sh "ls -ltr"
+                        sh "cp /zap/wrk/zap-report.xml ./"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
@@ -207,7 +185,8 @@ def call() {
                             reportDir: './',
                             reportFiles: 'zap-report.html',
                             reportName: 'DAST Report'
-                        ]                        
+                        ]      
+                        stash includes: 'zap-report.xml', name: 'zap-report'                        
                     }
                 }
             }
@@ -233,6 +212,31 @@ def call() {
             //         }
             //     }
             // }
+
+            stage('Publish Reports to ArcherySec') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.ARCHERYSEC_SLAVE_YAML}"
+                    }
+                }
+                steps {
+                    container('archerysec-cli') {
+                        withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
+                            // unstash 'owasp-reports'
+                            // unstash 'trivy-report' 
+                            unstash 'zap-report'
+                        
+                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+
+                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+
+                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=zap-report.xml --TARGET=DVNA_ZAP --scanner=zap_scan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+
+                            //sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+                        }    
+                    }
+                }
+            }
         }
     }
 }
