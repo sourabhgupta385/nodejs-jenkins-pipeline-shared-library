@@ -192,7 +192,7 @@ def call() {
                 }
                 steps {
                     container('zap') {
-                        sh "zap-baseline.py -t http://${properties.APP_STAGING_TARGET_URL} -r zap-report.html"
+                        sh "zap-baseline.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
