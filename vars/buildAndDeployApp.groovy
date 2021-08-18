@@ -86,20 +86,20 @@ def call() {
             //     }
             // }
 
-            // stage('Build Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile "${properties.BUILDAH_SLAVE_YAML}"
-            //         }
-            //     }
-            //     steps {
-            //         container('buildah') {
-            //             sh "buildah --storage-driver vfs bud -t ${properties.APP_NAME}:${BUILD_NUMBER} -f ${properties.DOCKERFILE_PATH}"
-            //             sh "buildah push --storage-driver vfs localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar:${properties.APP_NAME}:${BUILD_NUMBER}"
-            //             stash includes: "${properties.APP_NAME}_${BUILD_NUMBER}.tar", name: 'docker-image' 
-            //         }
-            //     }
-            // }
+            stage('Build Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.BUILDAH_SLAVE_YAML}"
+                    }
+                }
+                steps {
+                    container('buildah') {
+                        sh "buildah --storage-driver vfs bud -t ${properties.APP_NAME}:${BUILD_NUMBER} -f ${properties.DOCKERFILE_PATH}"
+                        sh "buildah push --storage-driver vfs localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar:${properties.APP_NAME}:${BUILD_NUMBER}"
+                        stash includes: "${properties.APP_NAME}_${BUILD_NUMBER}.tar", name: 'docker-image' 
+                    }
+                }
+            }
 
             // stage('Scan Docker Image') {
             //     agent {
@@ -119,33 +119,35 @@ def call() {
             //     }
             // }
 
-            // stage('Push Docker Image') {
-            //     agent {
-            //         kubernetes {
-            //             yamlFile "${properties.BUILDAH_SLAVE_YAML}"
-            //         }
-            //     }
-            //     steps {
-            //         container('buildah') {
-            //             withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_REGISTRY_USERNAME', passwordVariable: 'DOCKER_REGISTRY_PASSWORD')]) {
-            //                 unstash 'docker-image'
-            //                 sh "buildah login --log-level=debug -u ${DOCKER_REGISTRY_USERNAME} -p ${DOCKER_REGISTRY_PASSWORD} ${properties.DOCKER_REGISTRY_URL}"
-            //                 sh "buildah pull docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar"
-            //                 sh "buildah push localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker://sourabh385/${properties.APP_NAME}:${BUILD_NUMBER}"
-            //             }    
-            //         }
-            //     }
-            // }            
+            stage('Push Docker Image') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.BUILDAH_SLAVE_YAML}"
+                    }
+                }
+                steps {
+                    container('buildah') {
+                        withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_REGISTRY_USERNAME', passwordVariable: 'DOCKER_REGISTRY_PASSWORD')]) {
+                            unstash 'docker-image'
+                            sh "buildah login --log-level=debug -u ${DOCKER_REGISTRY_USERNAME} -p ${DOCKER_REGISTRY_PASSWORD} ${properties.DOCKER_REGISTRY_URL}"
+                            sh "buildah pull docker-archive:${properties.APP_NAME}_${BUILD_NUMBER}.tar"
+                            sh "buildah push localhost/${properties.APP_NAME}:${BUILD_NUMBER} docker://sourabh385/${properties.APP_NAME}:${BUILD_NUMBER}"
+                        }    
+                    }
+                }
+            }            
 
-            // stage('Deploy App in STAGING') {
-            //     agent any
+            stage('Deploy App in STAGING') {
+                agent any
 
-            //     steps {
-            //         withKubeConfig([credentialsId: 'k8s-cluster-creds', serverUrl: "${properties.KUBERNETES_CLUSTER_URL}"]) {
-            //             sh "kubectl -n ${properties.STAGING_NAMESPACE} apply -k ${properties.KUSTOMIZATION_DIRECTORY}"
-            //         }
-            //     }
-            // }
+                steps {
+                    withKubeConfig([credentialsId: 'k8s-cluster-creds', serverUrl: "${properties.KUBERNETES_CLUSTER_URL}"]) {
+                        sh "sed -i 's/IMAGE_NAME/${properties.APP_NAME}/g' ${properties.STAGING_KUSTOMIZATION_DIRECTORY}/kustomization.yaml"
+                        sh "sed -i 's/IMAGE_TAG/${BUILD_NUMBER}/g' ${properties.STAGING_KUSTOMIZATION_DIRECTORY}/kustomization.yaml"
+                        sh "kubectl -n ${properties.STAGING_NAMESPACE} apply -k ${properties.STAGING_KUSTOMIZATION_DIRECTORY}"
+                    }
+                }
+            }
 
             // stage('Functional Testing') {
             //     agent {
@@ -162,34 +164,34 @@ def call() {
             //     }
             // }
 
-            stage('Dynamic Application Security Testing') {
-                agent {
-                    kubernetes {
-                        yamlFile "${properties.ZAP_SLAVE_YAML}"
-                    }
-                }
-                steps {
-                    container('zap') {
-                        // It will exit with codes of:
-                        // 	0:	Success
-                        // 	1:	At least 1 FAIL
-                        // 	2:	At least one WARN and no FAILs
-                        // 	3:	Any other failure
-                        sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html -x zap-report.xml || true"
-                        sh "cp /zap/wrk/zap-report.html ./"
-                        sh "cp /zap/wrk/zap-report.xml ./"
-                        publishHTML target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: './',
-                            reportFiles: 'zap-report.html',
-                            reportName: 'DAST Report'
-                        ]      
-                        stash includes: 'zap-report.xml', name: 'zap-report'                        
-                    }
-                }
-            }
+            // stage('Dynamic Application Security Testing') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile "${properties.ZAP_SLAVE_YAML}"
+            //         }
+            //     }
+            //     steps {
+            //         container('zap') {
+            //             // It will exit with codes of:
+            //             // 	0:	Success
+            //             // 	1:	At least 1 FAIL
+            //             // 	2:	At least one WARN and no FAILs
+            //             // 	3:	Any other failure
+            //             sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html -x zap-report.xml || true"
+            //             sh "cp /zap/wrk/zap-report.html ./"
+            //             sh "cp /zap/wrk/zap-report.xml ./"
+            //             publishHTML target: [
+            //                 allowMissing: false,
+            //                 alwaysLinkToLastBuild: true,
+            //                 keepAll: true,
+            //                 reportDir: './',
+            //                 reportFiles: 'zap-report.html',
+            //                 reportName: 'DAST Report'
+            //             ]      
+            //             stash includes: 'zap-report.xml', name: 'zap-report'                        
+            //         }
+            //     }
+            // }
 
             // stage('Load Testing') {
             //     agent {
@@ -213,30 +215,30 @@ def call() {
             //     }
             // }
 
-            stage('Publish Reports to ArcherySec') {
-                agent {
-                    kubernetes {
-                        yamlFile "${properties.ARCHERYSEC_SLAVE_YAML}"
-                    }
-                }
-                steps {
-                    container('archerysec-cli') {
-                        withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
-                            // unstash 'owasp-reports'
-                            // unstash 'trivy-report' 
-                            unstash 'zap-report'
+            // stage('Publish Reports to ArcherySec') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile "${properties.ARCHERYSEC_SLAVE_YAML}"
+            //         }
+            //     }
+            //     steps {
+            //         container('archerysec-cli') {
+            //             withCredentials([usernamePassword(credentialsId: 'archerysec-creds', usernameVariable: 'ARCHERYSEC_USERNAME', passwordVariable: 'ARCHERYSEC_PASSWORD')]) {
+            //                 // unstash 'owasp-reports'
+            //                 // unstash 'trivy-report' 
+            //                 unstash 'zap-report'
                         
-                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+            //                 // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=dependency-check-report.xml --TARGET=DVNA_OWASP --scanner=dependencycheck --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
 
-                            // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+            //                 // sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=trivy-report.json --TARGET=DVNA_TRIVY --scanner=trivy --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
 
-                            sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=zap-report.xml --TARGET=DVNA_ZAP --scanner=zap_scan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+            //                 sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=XML --file=zap-report.xml --TARGET=DVNA_ZAP --scanner=zap_scan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
 
-                            //sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
-                        }    
-                    }
-                }
-            }
+            //                 //sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
+            //             }    
+            //         }
+            //     }
+            // }
         }
     }
 }
