@@ -199,6 +199,7 @@ def call() {
                         // 	3:	Any other failure
                         sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html -x zap-report.xml || true"
                         sh "ls -ltr"
+                        sh "cd /zap/wrk && ls -ltr"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
