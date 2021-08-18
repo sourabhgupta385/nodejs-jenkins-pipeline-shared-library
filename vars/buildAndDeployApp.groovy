@@ -169,17 +169,38 @@ def call() {
             //     }
             // }
 
-            stage('Functional Testing') {
+            // stage('Functional Testing') {
+            //     agent {
+            //         kubernetes {
+            //             yamlFile "${properties.NEWMAN_SLAVE_YAML}"
+            //         }
+            //     }
+            //     steps {
+            //         container('newman') {
+            //             sh "sed -i 's/APP_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
+            //             sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --verbose --reporters junit --reporter-junit-export='newman-report.xml'"
+            //             junit 'newman-report.xml'
+            //         }
+            //     }
+            // }
+
+            stage('Dynamic Application Security Testing') {
                 agent {
                     kubernetes {
-                        yamlFile "${properties.NEWMAN_SLAVE_YAML}"
+                        yamlFile "${properties.ZAP_SLAVE_YAML}"
                     }
                 }
                 steps {
-                    container('newman') {
-                        sh "sed -i 's/APP_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
-                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --verbose --reporters junit --reporter-junit-export='newman-report.xml'"
-                        junit 'newman-report.xml'
+                    container('zap') {
+                        sh "zap-baseline.py -t http://${properties.APP_STAGING_TARGET_URL} -r zap-report.html"
+                        publishHTML target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: './',
+                            reportFiles: 'zap-report.html',
+                            reportName: 'DAST Report'
+                        ]                        
                     }
                 }
             }
@@ -205,13 +226,6 @@ def call() {
                     }
                 }
             }
-
-            // stage('Integration Test') {
-            //     steps {
-            //         sh '''cd postman
-            //                 newman run day01.postman_collection.json -r cli,junit'''
-            //     }
-            // }
         }
     }
 }
