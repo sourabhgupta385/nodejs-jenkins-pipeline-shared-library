@@ -192,18 +192,18 @@ def call() {
                 }
                 steps {
                     container('zap') {
-                        // sh "zap-cli quick-scan --help"
-                        // sh "zap-cli start --start-options '-config api.disablekey=true'"
-                        // sh "zap-cli open-url http://${properties.APP_STAGING_TARGET_URL}"
-                        // sh "zap-cli spider http://${properties.APP_STAGING_TARGET_URL}"
-                        // sh "zap-cli report --output-format html --output zap-report.html"
-                        // sh "zap-cli quick-scan --spider http://${properties.APP_STAGING_TARGET_URL}"
-                        sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html"
+                        // It will exit with codes of:
+                        // 	0:	Success
+                        // 	1:	At least 1 FAIL
+                        // 	2:	At least one WARN and no FAILs
+                        // 	3:	Any other failure
+                        sh "zap-full-scan.py -t http://${properties.APP_STAGING_TARGET_URL} -g gen.conf -r zap-report.html -x zap-report.xml || true"
+                        sh "ls -ltr"
                         publishHTML target: [
                             allowMissing: false,
                             alwaysLinkToLastBuild: true,
                             keepAll: true,
-                            reportDir: './',
+                            reportDir: '/zap/wrk',
                             reportFiles: 'zap-report.html',
                             reportName: 'DAST Report'
                         ]                        
