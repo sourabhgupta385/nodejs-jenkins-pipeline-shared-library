@@ -13,7 +13,7 @@ def call() {
                 }
             }
 
-            stage('Unit Test') {
+            stage('Unit Testing & Code Coverage') {
                 agent {
                     kubernetes {
                         yamlFile "${properties.NODEJS_SLAVE_YAML}"
@@ -30,41 +30,45 @@ def call() {
                 }    
             }
 
-            stage('Static Application Security Testing') {
-                agent {
-                    kubernetes {
-                        yamlFile "${properties.NODEJSSCAN_SLAVE_YAML}"
+            stage('Security Testing'){
+                parallel {
+                    stage('Static Application Security Testing') {
+                        agent {
+                            kubernetes {
+                                yamlFile "${properties.NODEJSSCAN_SLAVE_YAML}"
+                            }
+                        }
+                        
+                        steps {
+                            container('nodejsscanner') {
+                                sh "njsscan src --html -o 'nodejs-scanner-report.html' || true"
+                                publishHTML target: [
+                                    allowMissing: false,
+                                    alwaysLinkToLastBuild: true,
+                                    keepAll: true,
+                                    reportDir: './',
+                                    reportFiles: 'nodejs-scanner-report.html',
+                                    reportName: 'SAST Report'
+                                ]
+                            }
+                        }
                     }
-                }
-                
-                steps {
-                    container('nodejsscanner') {
-                        sh "njsscan src --html -o 'nodejs-scanner-report.html' || true"
-                        publishHTML target: [
-                            allowMissing: false,
-                            alwaysLinkToLastBuild: true,
-                            keepAll: true,
-                            reportDir: './',
-                            reportFiles: 'nodejs-scanner-report.html',
-                            reportName: 'SAST Report'
-                        ]
-                    }
-                }
-            }
 
-            stage('Software Composition Analysis') {
-                agent {
-                    kubernetes {
-                        yamlFile "${properties.OWASP_DEPENDENCY_CHECK_SLAVE_YAML}"
-                    }
-                }
-                
-                steps {
-                    container('owasp-dependency-checker') {
-                        unstash 'node_modules'
-                        sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ${properties.PACKAGE_JSON_PATH} --format ALL"
-                        dependencyCheckPublisher pattern: "dependency-check-report.xml"
-                        stash includes: "dependency-check-report.xml,dependency-check-report.json,dependency-check-report.html", name: 'owasp-reports' 
+                    stage('Software Composition Analysis') {
+                        agent {
+                            kubernetes {
+                                yamlFile "${properties.OWASP_DEPENDENCY_CHECK_SLAVE_YAML}"
+                            }
+                        }
+                        
+                        steps {
+                            container('owasp-dependency-checker') {
+                                unstash 'node_modules'
+                                sh "/usr/share/dependency-check/bin/dependency-check.sh --project 'DNVA' --scan ${properties.PACKAGE_JSON_PATH} --format ALL"
+                                dependencyCheckPublisher pattern: "dependency-check-report.xml"
+                                stash includes: "dependency-check-report.xml,dependency-check-report.json,dependency-check-report.html", name: 'owasp-reports' 
+                            }
+                        }
                     }
                 }
             }
