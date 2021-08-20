@@ -14,6 +14,5 @@ def call(String targetUrl) {
         reportDir: './',
         reportFiles: 'zap-report.html',
         reportName: 'DAST Report'
-    ]      
-    stash includes: 'zap-report.xml', name: 'zap-report'  
+    ]
 }
