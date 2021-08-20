@@ -153,6 +153,21 @@ def call() {
                 }
             }
 
+			stage('Functional Testing') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.NEWMAN_SLAVE_YAML}"
+                    }
+                }
+                steps {
+                    container('newman') {
+                        sh "sed -i 's/APP_URL/${properties.APP_STAGING_TARGET_URL}/g' ${properties.POSTMAN_COLLECTION_FILE_PATH}"
+                        sh "newman run ${properties.POSTMAN_COLLECTION_FILE_PATH} --verbose --reporters junit --reporter-junit-export='newman-report.xml'"
+                        junit 'newman-report.xml'
+                    }
+                }
+            }
+
             stage('Dynamic Application Security Testing') {
                 agent {
                     kubernetes {
@@ -182,6 +197,28 @@ def call() {
                 }
             }
 
+			stage('Load Testing') {
+                agent {
+                    kubernetes {
+                        yamlFile "${properties.ARTILLERY_SLAVE_YAML}"
+                    }
+                }
+                steps {
+                    container('artillery') {
+                        sh "artillery run -e staging -t http://${properties.APP_STAGING_TARGET_URL} -o artillery-report.json ${properties.ARTILLERY_CONFIG_FILE_PATH}"
+                        sh "artillery report -o artillery-report.html artillery-report.json"
+                        publishHTML target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: './',
+                            reportFiles: 'artillery-report.html',
+                            reportName: 'Load Testing Report'
+                        ]
+                    }
+                }
+            }
+
             stage('Publish Reports to ArcherySec') {
                 agent {
                     kubernetes {
@@ -203,6 +240,18 @@ def call() {
 
                             //sh "archerysec-cli -s ${properties.ARCHERYSEC_HOST_URL} -u ${ARCHERYSEC_USERNAME} -p ${ARCHERYSEC_PASSWORD} --upload --file_type=JSON --file=nodejs-scanner-report.json --TARGET=DVNA_NODEJSSCAN --scanner=nodejsscan --project_id=${properties.ARCHERYSEC_PROJECT_ID}"
                         }    
+                    }
+                }
+            }
+
+            stage('Deploy App in Production') {
+                agent any
+
+                steps {
+                    withKubeConfig([credentialsId: 'k8s-cluster-creds', serverUrl: "${properties.KUBERNETES_CLUSTER_URL}"]) {
+                        sh "sed -i 's/IMAGE_NAME/${properties.APP_NAME}/g' ${properties.PRODUCTION_KUSTOMIZATION_DIRECTORY}/kustomization.yaml"
+                        sh "sed -i 's/IMAGE_TAG/${BUILD_NUMBER}/g' ${properties.PRODUCTION_KUSTOMIZATION_DIRECTORY}/kustomization.yaml"
+                        sh "kubectl -n ${properties.PRODUCTION_NAMESPACE} apply -k ${properties.PRODUCTION_KUSTOMIZATION_DIRECTORY}"
                     }
                 }
             }
